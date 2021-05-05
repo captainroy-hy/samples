@@ -1,21 +1,14 @@
----
-apiVersion: core.oam.dev/v1alpha2
-kind: ApplicationConfiguration
+apiVersion: core.oam.dev/v1beta1
+kind: Application
 metadata:
   name: example-appconfig
 spec:
   components:
-    - componentName: example-component
-      parameterValues:
-        - name: instance-name
-          value: example-appconfig-workload
-        - name: image
-          value: nginx:latest
+    - name: example-component
+      type: webservice
+      properties:
+        image: nginx:latest
       traits:
-        - trait:
-            apiVersion: core.oam.dev/v1alpha2
-            kind: ManualScalerTrait
-            metadata:
-              name:  example-appconfig-trait
-            spec:
-              replicaCount: 3
+        - type: scaler
+          properties:
+            replicas: 3

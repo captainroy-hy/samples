@@ -1,34 +1,48 @@
 # Managing custom Kubernetes applications with kpt
 
-This guidance will demonstrate how to use kpt to manage custom Kubernetes applications (i.e. apps defined by CRDs instead of raw Kubernetes workloads).
+This guidance will demonstrate how to use kpt to manage custom Kubernetes
+applications (i.e. apps defined by CRDs instead of raw Kubernetes workloads).
 
-We will use [Open Application Model](https://github.com/oam-dev/spec)(OAM) to describe the app for standardization and portability consideration. But you are free to use any Custom Resource to describe your application as well. [Crossplane](https://github.com/crossplane/crossplane) will be installed as the OAM runtime for Kubernetes.
+We will use [KubeVela](https://kubevela.io) to describe the app for
+standardization and portability consideration. 
+But you are free to use any Custom Resource to describe your application as
+well.  
 
-## What is kpt and what is OAM?
+## What is kpt?
 
-Both kpt and OAM are outcomes of "Configuration-as-Data (or, Infrastructure-as-Data, IaD)".
+Pioneered by [Kubernetes
+community](https://twitter.com/bgrant0607/status/1221485437153243137),
+Configuration-as-Data emphasizes that "configuration should be treated as data
+and leverage pipelines for manipulation and policy enforcement". 
+In Kubernetes, Configuration-as-Data approach builds upon the design of the
+[Kubernetes resource model
+(KRM)](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/architecture/resource-management.md).
+As a result, today any resource we applied to Kubernetes is a piece of data that
+represents the desired state for certain part of application or infrastructure
+in the real system.
 
-Pioneered by [Kubernetes community](https://twitter.com/bgrant0607/status/1221485437153243137), Configuration-as-Data emphasizes that "configuration should be treated as data and leverage pipelines for manipulation and policy enforcement". In Kubernetes, Configuration-as-Data approach builds upon the design of the [Kubernetes resource model (KRM)](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/architecture/resource-management.md). As a result, today any resource we applied to Kubernetes is a piece of data that represents the desired state for certain part of application or infrastructure in the real system.
+With the heart of Configuration-as-Data, a typical Kubernetes native application
+management workflow just looks like a "pipeline". See the picture below:
 
-With the heart of Configuration-as-Data, a typical Kubernetes native application management workflow just looks like a "pipeline". See the picture below:
+![img](./assets/kpt_oam.png)
 
-![img](./resource/kpt_oam.png)
-
-In this workflow, kpt is the manipulator of data. Stored in data source like Git, the original data (e.g. deployment.yaml) will pass through a pipeline of kpt functionalities to be manipulated into the desire state step by step. For example, `labels` added, `replicas` modified and `image` updated etc. 
-
-So what is OAM then? OAM is the format of data. More accurately, OAM is a specific data format so Kubernetes can expose higher level abstraction such as "application" to developers.
-
-In that sense, it's a natural match for using kpt to manipulate the data which is formatted by OAM specification.
+In this workflow, kpt is the manipulator of data. Stored in data source like
+Git, the original data (e.g. deployment.yaml) will pass through a pipeline of
+kpt functionalities to be manipulated into the desire state step by step. 
+For example, `labels` added, `replicas` modified and `image` updated etc. 
 
 ## Pre-requisites
 
-Install OAM Kubernetes runtime (Crossplane) by following [its installation guides](https://github.com/oam-dev/crossplane-oam-sample#installation).
+* Follow the instructions in the
+[installation](https://kubevela.io/docs/install) document to get KubeVela
+installed.
 
 ## Create App Repository for kpt
 
 kpt directly use GitHub repo as App Repository, so no action needed.
 
-With the help of kpt, we could directly use GitHub Repo as App Repository without organizing apps in any fixed format.
+With the help of kpt, we could directly use GitHub Repo as App Repository
+without organizing apps in any fixed format.
 
 ### Release your application to App Repository
 
@@ -44,11 +58,14 @@ So release your OAM app only needs two steps.
     git push -u origin master
     ```
 
-### Fetch OAM app from remote Repository
+### Fetch KubeVela app from remote Repository
 
-Using our [example repository](https://github.com/oam-dev/samples/tree/master/5.OAM_KPT_Demo/repository/) for this demo.
+Using our [example
+repository](https://github.com/oam-dev/samples/tree/master/5.OAM_KPT_Demo/repository/)
+for this demo.
 
-You could fetch OAM app from remote Repository using [kpt pkg get](https://googlecontainertools.github.io/kpt/reference/pkg/get/).
+You could fetch KubeVel app from remote Repository using [kpt pkg
+get](https://googlecontainertools.github.io/kpt/reference/pkg/get/).
 
 #### Command
 
@@ -66,8 +83,7 @@ fetching package /5.OAM_KPT_Demo/repository/sampleapp from https://github.com/oa
 ➜  kpt tree sampleapp
 sampleapp
 ├── Kptfile
-├── appconfig.yaml
-└── component.yaml
+└── appconfig.yaml
 
 0 directories, 3 files
 ```
@@ -76,15 +92,8 @@ sampleapp
 
 ```shell
 $ kubectl apply -f sampleapp/
-component.core.oam.dev/example-component created
-applicationconfiguration.core.oam.dev/example-appconfig created
+application.core.oam.dev/example-appconfig created
 ```
-
-Several resources are created:
-
-* Component is the description of what you want to deploy.
-* ApplicationConfiguration is the description of operational policies for your Component.
-
 Check the underlying Deployment instance generated by OAM.
 
 ```shell
@@ -93,35 +102,40 @@ NAME                                    READY   UP-TO-DATE   AVAILABLE   AGE
 example-appconfig-workload-deployment   3/3     3            3           114s
 ```
 
-
 ### Sync with Remote App Repository
 
-When some changes occurred both local and remote apps, you could sync and merge with kpt.
+When some changes occurred both local and remote apps, you could sync and merge
+with kpt.
 
-For example, we changed our sampleapp and tag it as `v0.1.0`. Then our local sampleapp also be changed.
+For example, we changed our sampleapp and tag it as `v0.1.0`, then our local
+sampleapp also is changed.
 
 ```shell
 kpt pkg update sampleapp@v0.1.0 --strategy=resource-merge
 ```
 
-Ref to [update section](https://googlecontainertools.github.io/kpt/guides/consumer/update/#commit-local-changes) of kpt for more details.
+Ref to [update
+section](https://googlecontainertools.github.io/kpt/guides/consumer/update/#commit-local-changes)
+of kpt for more details.
 
 
 ### Parameter Setting
 
-[kpt setters](https://googlecontainertools.github.io/kpt/guides/consumer/set/) is a powerful feature which naturally matches to the idea of "separate concerns" design from OAM.
+[kpt setters](https://googlecontainertools.github.io/kpt/guides/consumer/set/)
+is a powerful feature which naturally matches to the idea of "separate concerns"
+design from KubeVela.
 
-In Open Application Model, developers can claim certain fields in the application YAML as "configurable", so in the following workflow, operators (or the platform) will be allowed to modify these fields.
+In KubeVela, developers can claim certain fields in the application YAML as
+"configurable", so in the following workflow, operators (or the platform) will
+be allowed to modify these fields.
 
 Now this goal can be easily achieved with help of kpt.
 
 #### Create setter by App Developer
 
-Let's say the developer need to claim two fields as "configurable" for his application, he can add two kpt setters here:
+Let's say the developer need to claim two fields as "configurable" for his
+application, he can add two kpt setters here:
 
-```shell
-$ kpt cfg create-setter sampleapp/ instance-name example-component --field "metadata.name" --description "use to set an instance name" --set-by "sampleapp developer"
-```
 
 ```shell
 $ kpt cfg create-setter sampleapp/ image nginx:1.16.1 --field "image" --description "use to set image for component" --set-by "sampleapp developer"
